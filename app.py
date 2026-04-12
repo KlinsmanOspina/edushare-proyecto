@@ -7,8 +7,8 @@ from supabase import create_client, Client
 st.set_page_config(page_title="EduShare | Proyecto de Grado", page_icon="🎓", layout="wide")
 
 # 2. CONEXIÓN A SUPABASE (Rellena con tus datos)
-URL_SUPABASE = "TU_URL_AQUI"
-KEY_SUPABASE = "TU_LLAVE_AQUI"
+URL_SUPABASE = "https://cofdpzmpkwiybeffqntk.supabase.co"
+KEY_SUPABASE = "sb_publishable_zzPPoqndQZyUpwrnJ45ifg_vT0sfy6S"
 
 @st.cache_resource
 def init_connection():
