@@ -56,6 +56,6 @@ for i, materia in enumerate(materias_por_semestre[semestre]):
             else:
                 st.success("Archivo listo para descarga.")
 
-# Pie de página técnico para Metodología
+# Pie de página técnico para Metodologías
 st.sidebar.divider()
 st.sidebar.caption(f"Versión: Prototipo Sprint 1 | Fecha: {datetime.now().strftime('%d/%m/%Y')}")
