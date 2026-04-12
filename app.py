@@ -8,8 +8,8 @@ st.set_page_config(page_title="EduShare | Base de Datos Real", layout="wide")
 
 # 2. CONEXIÓN A SUPABASE
 # IMPORTANTE: Reemplaza estos valores con los de tu proyecto en Supabase (Settings -> API)
-URL_SUPABASE = "TU_URL_AQUÍ"
-KEY_SUPABASE = "TU_LLAVE_ANON_AQUÍ"
+URL_SUPABASE = "https://cofdpzmpkwiybeffqntk.supabase.co"
+KEY_SUPABASE = "sb_publishable_zzPPoqndQZyUpwrnJ45ifg_vT0sfy6S"
 
 @st.cache_resource
 def init_connection():
