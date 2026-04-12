@@ -2,87 +2,87 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# 1. Configuración y Estilo
+# 1. Configuración de la Página
 st.set_page_config(page_title="EduShare | Repositorio Académico", page_icon="📚", layout="wide")
 
-st.markdown("""
-    <style>
-    .stApp { background-color: #fdfcfb; }
-    .stButton>button { width: 100%; border-radius: 8px; border: 1px solid #c2410c; }
-    .css-1r6slb0 { background-color: white; padding: 2rem; border-radius: 15px; shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-    </style>
-    """, unsafe_allow_html=True)
-
-# 2. Inicialización de la "Base de Datos" en memoria (Sprint 3)
+# 2. Inicialización del Estado (Base de datos temporal)
 if 'repositorio' not in st.session_state:
+    # Datos iniciales de ejemplo basados en tu propuesta [cite: 103, 111]
     st.session_state.repositorio = [
-        {"titulo": "Taller DHCP Ubuntu", "materia": "Redes I", "semestre": 4, "autor": "Ospina", "fecha": "2024-05-20"},
-        {"titulo": "Resumen Derivadas", "materia": "Cálculo I", "semestre": 1, "autor": "Antivar", "fecha": "2024-05-18"}
+        {"titulo": "Guía de Metodología", "materia": "Metodología", "semestre": 1, "autor": "Sistema", "fecha": "2024-05-01"},
+        {"titulo": "Apuntes de Cálculo", "materia": "Cálculo I", "semestre": 1, "autor": "Admin", "fecha": "2024-05-02"}
     ]
 
-# 3. Lógica de Control (Calendario)
+# 3. Lógica de Control (Calendario Académico) [cite: 100, 120]
 dia_actual = datetime.now().day
-es_semana_parciales = 15 <= dia_actual <= 20 # Bloqueo simulado
+# Simulamos semana de parciales si el día está entre 15 y 20
+es_semana_parciales = 15 <= dia_actual <= 20 
 
-# --- BARRA LATERAL ---
-st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3413/3413535.png", width=80)
-st.sidebar.title("EduShare Panel")
-
-menu = st.sidebar.radio("Ir a:", ["Explorar Apuntes", "Subir Material", "Mi Perfil (Próximamente)"])
+# --- INTERFAZ LATERAL (SIDEBAR) ---
+st.sidebar.title("🚀 EduShare")
+menu = st.sidebar.radio("Menú", ["Explorar Material", "Subir Apuntes"])
 
 st.sidebar.divider()
 filtro_semestre = st.sidebar.selectbox("Filtrar por Semestre", [1, 2, 3, 4, 5])
 
-# --- VISTA: EXPLORAR ---
-if menu == "Explorar Apuntes":
-    st.title("📂 Repositorio de Material")
+# --- VISTA 1: EXPLORAR MATERIAL ---
+if menu == "Explorar Material":
+    st.title("📂 Repositorio de Apuntes")
+    st.write("Accede al material compartido por tus compañeros[cite: 117].")
     
     if es_semana_parciales:
-        st.warning("⚠️ **Restricción de Parciales Activa**: La descarga está deshabilitada para proteger la integridad académica.") [cite: 100, 110]
-    
+        st.warning("⚠️ **Control de Acceso**: Las descargas están restringidas por periodo de exámenes[cite: 100, 110].")
+
     # Buscador dinámico
-    busqueda = st.text_input("🔍 Buscar por nombre del apunte o materia...")
+    busqueda = st.text_input("🔍 Buscar por título o materia...")
     
-    # Filtrar datos
-    datos = pd.DataFrame(st.session_state.repositorio)
-    resultado = datos[datos['semestre'] == filtro_semestre]
+    # Convertir a DataFrame para filtrar
+    df = pd.DataFrame(st.session_state.repositorio)
     
+    # Aplicar filtros
+    resultado = df[df['semestre'] == filtro_semestre]
     if busqueda:
-        resultado = resultado[resultado['titulo'].str.contains(busqueda, case=False) | resultado['materia'].str.contains(busqueda, case=False)]
+        resultado = resultado[resultado['titulo'].str.contains(busqueda, case=False) | 
+                              resultado['materia'].str.contains(busqueda, case=False)]
 
     if not resultado.empty:
-        for index, row in resultado.iterrows():
-            with st.expander(f"📄 {row['titulo']} - {row['materia']}"):
-                st.write(f"**Autor:** {row['autor']} | **Fecha:** {row['fecha']}")
-                if es_semana_parciales:
-                    st.button("🔒 Archivo Bloqueado", disabled=True, key=f"btn_{index}")
-                else:
-                    st.download_button("⬇️ Descargar PDF (Simulado)", data="Contenido del archivo", file_name=f"{row['titulo']}.pdf", key=f"btn_{index}")
+        for i, row in resultado.iterrows():
+            with st.container(border=True):
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.markdown(f"### {row['titulo']}")
+                    st.caption(f"Materia: {row['materia']} | Autor: {row['autor']}")
+                with col2:
+                    if es_semana_parciales:
+                        st.button("🔒 Bloqueado", key=f"lock_{i}", disabled=True)
+                    else:
+                        st.download_button("⬇️ Descargar", data="Contenido", file_name=f"{row['titulo']}.pdf", key=f"dl_{i}")
     else:
-        st.info("No se encontraron apuntes para este filtro.")
+        st.info("No hay material disponible para los criterios seleccionados.")
 
-# --- VISTA: SUBIR ---
-elif menu == "Subir Material":
-    st.title("📤 Compartir Conocimiento")
-    st.write("Tu aporte ayuda a la comunidad académica.") [cite: 119]
+# --- VISTA 2: SUBIR APUNTES ---
+else:
+    st.title("📤 Compartir Material")
+    st.write("Ayuda a fortalecer el acceso equitativo al estudio[cite: 96, 119].")
     
-    with st.form("upload_form"):
-        nuevo_titulo = st.text_input("Título del apunte")
-        nueva_materia = st.selectbox("Materia", ["Cálculo I", "Redes I", "Programación", "Metodología", "Física"])
-        archivo = st.file_uploader("Selecciona el archivo (PDF, DOCX)", type=['pdf', 'docx', 'png', 'jpg'])
+    with st.form("form_subida", clear_on_submit=True):
+        titulo = st.text_input("Título del documento")
+        materia = st.text_input("Nombre de la materia")
+        semestre_doc = st.number_input("Semestre", min_value=1, max_value=10, value=filtro_semestre)
+        archivo = st.file_uploader("Selecciona el archivo", type=['pdf', 'docx', 'jpg', 'png'])
         
-        enviar = st.form_submit_button("Publicar Apunte")
+        boton_subir = st.form_submit_button("Publicar en la Plataforma")
         
-        if enviar:
-            if nuevo_titulo and archivo:
-                nuevo_item = {
-                    "titulo": nuevo_titulo,
-                    "materia": nueva_materia,
-                    "semestre": filtro_semestre,
-                    "autor": "Usuario Actual",
+        if boton_subir:
+            if titulo and materia and archivo:
+                nuevo_apunte = {
+                    "titulo": titulo,
+                    "materia": materia,
+                    "semestre": semestre_doc,
+                    "autor": "Estudiante",
                     "fecha": datetime.now().strftime("%Y-%m-%d")
                 }
-                st.session_state.repositorio.append(nuevo_item)
-                st.success("✅ ¡Apunte subido con éxito al repositorio!")
+                st.session_state.repositorio.append(nuevo_apunte)
+                st.success("✅ ¡Material compartido con éxito!")
             else:
-                st.error("Por favor rellena todos los campos.")
+                st.error("Por favor completa todos los campos y sube un archivo.")
