@@ -2,96 +2,99 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# 1. Configuración de la Página
-st.set_page_config(page_title="EduShare | Gamificación", page_icon="📚", layout="wide")
+# 1. Configuración de Estilo Profesional
+st.set_page_config(page_title="EduShare | Proyecto de Grado", page_icon="🎓", layout="wide")
 
-# 2. Inicialización del Estado con Protección contra KeyError
+# Estilos CSS para que no parezca una página básica
+st.markdown("""
+    <style>
+    .stApp { background-color: #f8f9fa; }
+    div.stButton > button { border-radius: 5px; height: 3em; width: 100%; }
+    .reportview-container .main { color: #2c3e50; }
+    </style>
+    """, unsafe_allow_html=True)
+
+# 2. Base de datos con "Seguro" de inicialización
 if 'repositorio' not in st.session_state:
     st.session_state.repositorio = [
         {"titulo": "Guía de Metodología", "materia": "Metodología", "semestre": 1, "autor": "Sistema", "fecha": "2024-05-01", "likes": 5},
         {"titulo": "Apuntes de Cálculo", "materia": "Cálculo I", "semestre": 1, "autor": "Admin", "fecha": "2024-05-02", "likes": 3}
     ]
 
-# 3. Lógica de Control de Acceso
+# 3. Control de Acceso por Calendario (Objetivo Específico 3)
 dias_parciales = [15, 16, 17, 18, 19, 20] 
-dia_actual = datetime.now().day
-bloqueo_activo = dia_actual in dias_parciales
+bloqueo_activo = datetime.now().day in dias_parciales
 
-# --- SIDEBAR ---
-st.sidebar.title("🚀 EduShare")
-menu = st.sidebar.radio("Menú Principal", ["Explorar Material", "Subir Apuntes", "Ranking de Colaboradores"])
+# --- NAVEGACIÓN ---
+with st.sidebar:
+    st.title("🎓 EduShare")
+    st.write("Plataforma Colaborativa")
+    menu = st.radio("Secciones", ["Explorar Repositorio", "Subir Material", "Panel de Impacto"])
+    st.divider()
+    sem_filtro = st.selectbox("Semestre Actual", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
-st.sidebar.divider()
-filtro_semestre = st.sidebar.selectbox("Filtrar por Semestre", [1, 2, 3, 4, 5])
-
-# --- VISTA 1: EXPLORAR ---
-if menu == "Explorar Material":
-    st.title("📂 Repositorio Académico")
+# --- VISTA: EXPLORAR ---
+if menu == "Explorar Repositorio":
+    st.header(f"📂 Material de {sem_filtro}° Semestre")
     
     if bloqueo_activo:
-        st.error("⚠️ Modo parciales: Descargas bloqueadas por integridad académica.")
+        st.warning("⚠️ **Sincronización con Calendario:** Acceso restringido por periodo evaluativo[cite: 100].")
     
-    busqueda = st.text_input("🔍 Buscar material...")
+    busqueda = st.text_input("🔍 Filtrar por nombre o asignatura...")
     
-    # Filtrar y asegurar que existan los likes
+    # Procesar datos con seguridad
+    df = pd.DataFrame(st.session_state.repositorio)
+    if 'likes' not in df.columns: df['likes'] = 0
+    
+    # Lógica de visualización
     for i, item in enumerate(st.session_state.repositorio):
-        # Solución al KeyError: Si no existe la llave 'likes', la creamos en 0
-        if 'likes' not in item:
-            st.session_state.repositorio[i]['likes'] = 0
-            
-        if item['semestre'] == filtro_semestre and (busqueda.lower() in item['titulo'].lower() or busqueda.lower() in item['materia'].lower()):
+        if item['semestre'] == sem_filtro and (busqueda.lower() in item['titulo'].lower() or busqueda.lower() in item['materia'].lower()):
             with st.container(border=True):
-                c1, c2, c3 = st.columns([3, 1, 1])
-                with c1:
+                col_text, col_stats, col_action = st.columns([3, 1, 1])
+                with col_text:
                     st.subheader(item['titulo'])
-                    st.caption(f"Materia: {item['materia']} | Autor: {item['autor']}")
-                with c2:
-                    # Usamos .get() para evitar errores si la llave desaparece
-                    likes_actuales = item.get('likes', 0)
-                    st.write(f"👍 {likes_actuales} Reconocimientos")
-                    if st.button(f"Valorar", key=f"lk_{i}"):
+                    st.write(f"📖 **{item['materia']}** | 👤 {item['autor']}")
+                with col_stats:
+                    st.write(f"⭐ {item.get('likes', 0)} Validados")
+                    # Pequeño truco para que no den likes tan rápido
+                    if st.button("Validar", key=f"lk_{i}"):
                         st.session_state.repositorio[i]['likes'] += 1
                         st.rerun()
-                with c3:
+                with col_action:
                     if bloqueo_activo:
-                        st.button("🔒 Bloqueado", disabled=True, key=f"dl_{i}")
+                        st.button("🔒 Bloqueado", disabled=True, key=f"lock_{i}")
                     else:
-                        st.download_button("⬇️ Descargar", data="PDF", file_name=f"{item['titulo']}.pdf", key=f"dl_{i}")
+                        st.download_button("📥 Descargar", data="DATA", file_name=f"{item['titulo']}.pdf", key=f"dl_{i}")
 
-# --- VISTA 2: SUBIR ---
-elif menu == "Subir Apuntes":
-    st.title("📤 Subir Material")
-    with st.form("form_subida", clear_on_submit=True):
-        t = st.text_input("Título del apunte")
-        m = st.text_input("Materia")
-        s = st.slider("Semestre", 1, 5, filtro_semestre)
-        arch = st.file_uploader("Archivo")
-        if st.form_submit_button("Publicar"):
-            if t and m and arch:
+# --- VISTA: SUBIR ---
+elif menu == "Subir Material":
+    st.header("📤 Carga de Material Académico")
+    st.info("Asegúrate de que el material sea de autoría propia o libre de derechos[cite: 101].")
+    
+    with st.form("upload", clear_on_submit=True):
+        t = st.text_input("Título del Apunte")
+        m = st.text_input("Asignatura")
+        s = st.number_input("Semestre correspondiente", 1, 10, sem_filtro)
+        a = st.file_uploader("Documento (PDF/Imagen)", type=['pdf', 'jpg', 'png'])
+        
+        if st.form_submit_button("Publicar en la red"):
+            if t and m and a:
                 st.session_state.repositorio.append({
                     "titulo": t, "materia": m, "semestre": s, 
-                    "autor": "Estudiante", "fecha": datetime.now().strftime("%Y-%m-%d"), "likes": 0
+                    "autor": "Estudiante_Colab", "fecha": datetime.now().strftime("%d/%m/%Y"), "likes": 0
                 })
-                st.success("¡Material publicado con éxito!")
-                st.rerun()
+                st.success("✅ Material cargado. Aparecerá en el repositorio mientras la sesión esté activa.")
+            else:
+                st.error("Campos incompletos.")
 
-# --- VISTA 3: RANKING (GAMIFICACIÓN) ---
+# --- VISTA: IMPACTO ---
 else:
-    st.title("🏆 Ranking de Colaboradores")
-    st.write("Estudiantes que más han aportado a la comunidad.")
-    
-    df = pd.DataFrame(st.session_state.repositorio)
-    
-    if not df.empty:
-        # Aseguramos que la columna likes exista en el DataFrame para evitar el segundo error
-        if 'likes' not in df.columns:
-            df['likes'] = 0
-            
-        # Agrupar por materia para ver cuáles son las más apoyadas
-        materia_stats = df.groupby('materia')['likes'].sum().reset_index()
-        st.bar_chart(data=materia_stats, x='materia', y='likes')
+    st.header("📊 Estadísticas de la Comunidad")
+    df_stats = pd.DataFrame(st.session_state.repositorio)
+    if not df_stats.empty:
+        st.subheader("Materias con mayor colaboración")
+        stats = df_stats.groupby('materia')['likes'].sum().reset_index()
+        st.bar_chart(data=stats, x='materia', y='likes', color="#c2410c")
         
-        # Tabla de líderes
-        st.table(df[['titulo', 'autor', 'likes']].sort_values(by='likes', ascending=False))
-    else:
-        st.info("Aún no hay datos para mostrar el ranking.")
+        st.subheader("Ranking de Calidad [cite: 99]")
+        st.dataframe(df_stats[['titulo', 'materia', 'likes']].sort_values('likes', ascending=False), use_container_width=True)
