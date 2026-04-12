@@ -2,76 +2,87 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# 1. Configuración de Identidad Visual
-st.set_page_config(page_title="EduShare | Plataforma Académica", page_icon="📚")
+# 1. Configuración y Estilo
+st.set_page_config(page_title="EduShare | Repositorio Académico", page_icon="📚", layout="wide")
 
-# Estilo personalizado (CSS simple)
 st.markdown("""
     <style>
-    .main { background-color: #fdfcfb; }
-    .stButton>button { background-color: #c2410c; color: white; border-radius: 10px; }
+    .stApp { background-color: #fdfcfb; }
+    .stButton>button { width: 100%; border-radius: 8px; border: 1px solid #c2410c; }
+    .css-1r6slb0 { background-color: white; padding: 2rem; border-radius: 15px; shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Base de Datos de Materias (Requerimiento de Organización)
-materias_por_semestre = {
-    1: ["Cálculo I", "Álgebra Lineal", "Introducción a la Ingeniería"],
-    2: ["Cálculo II", "Física I", "Programación I"],
-    3: ["Cálculo III", "Física II", "Estructuras de Datos"]
-}
+# 2. Inicialización de la "Base de Datos" en memoria (Sprint 3)
+if 'repositorio' not in st.session_state:
+    st.session_state.repositorio = [
+        {"titulo": "Taller DHCP Ubuntu", "materia": "Redes I", "semestre": 4, "autor": "Ospina", "fecha": "2024-05-20"},
+        {"titulo": "Resumen Derivadas", "materia": "Cálculo I", "semestre": 1, "autor": "Antivar", "fecha": "2024-05-18"}
+    ]
 
-# 3. Lógica del Calendario Académico (Requerimiento de Control)
-# Simulamos que del 15 al 20 de cada mes es semana de parciales
+# 3. Lógica de Control (Calendario)
 dia_actual = datetime.now().day
-es_semana_parciales = 15 <= dia_actual <= 20
+es_semana_parciales = 15 <= dia_actual <= 20 # Bloqueo simulado
 
-# --- INTERFAZ DE USUARIO ---
-st.title("📚 EduShare")
-st.subheader("Plataforma Colaborativa de Apuntes")
+# --- BARRA LATERAL ---
+st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3413/3413535.png", width=80)
+st.sidebar.title("EduShare Panel")
 
-# Sidebar para Navegación
-st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3413/3413535.png", width=100)
-st.sidebar.title("Navegación")
-semestre = st.sidebar.selectbox("Seleccione su Semestre", [1, 2, 3])
+menu = st.sidebar.radio("Ir a:", ["Explorar Apuntes", "Subir Material", "Mi Perfil (Próximamente)"])
 
-# Alerta de Control de Acceso (Tu propuesta innovadora)
-if es_semana_parciales:
-    st.warning("⚠️ **CONTROL DE INTEGRIDAD ACTIVO**: Debido a la semana de parciales, las descargas están limitadas.")
-else:
-    st.info("✅ **ACCESO LIBRE**: El repositorio está abierto para intercambio de material.")
+st.sidebar.divider()
+filtro_semestre = st.sidebar.selectbox("Filtrar por Semestre", [1, 2, 3, 4, 5])
 
-# Cuerpo Principal: Materias y Apuntes
-st.divider()
-st.header(f"Materias de {semestre}° Semestre")
+# --- VISTA: EXPLORAR ---
+if menu == "Explorar Apuntes":
+    st.title("📂 Repositorio de Material")
+    
+    if es_semana_parciales:
+        st.warning("⚠️ **Restricción de Parciales Activa**: La descarga está deshabilitada para proteger la integridad académica.") [cite: 100, 110]
+    
+    # Buscador dinámico
+    busqueda = st.text_input("🔍 Buscar por nombre del apunte o materia...")
+    
+    # Filtrar datos
+    datos = pd.DataFrame(st.session_state.repositorio)
+    resultado = datos[datos['semestre'] == filtro_semestre]
+    
+    if busqueda:
+        resultado = resultado[resultado['titulo'].str.contains(busqueda, case=False) | resultado['materia'].str.contains(busqueda, case=False)]
 
-cols = st.columns(len(materias_por_semestre[semestre]))
+    if not resultado.empty:
+        for index, row in resultado.iterrows():
+            with st.expander(f"📄 {row['titulo']} - {row['materia']}"):
+                st.write(f"**Autor:** {row['autor']} | **Fecha:** {row['fecha']}")
+                if es_semana_parciales:
+                    st.button("🔒 Archivo Bloqueado", disabled=True, key=f"btn_{index}")
+                else:
+                    st.download_button("⬇️ Descargar PDF (Simulado)", data="Contenido del archivo", file_name=f"{row['titulo']}.pdf", key=f"btn_{index}")
+    else:
+        st.info("No se encontraron apuntes para este filtro.")
 
-for i, materia in enumerate(materias_por_semestre[semestre]):
-    with cols[i]:
-        st.markdown(f"### {materia}")
-        if st.button(f"Ver apuntes", key=materia):
-            st.write(f"Cargando archivos de {materia}...")
-            if es_semana_parciales:
-                st.error("Archivo bloqueado por parciales.")
+# --- VISTA: SUBIR ---
+elif menu == "Subir Material":
+    st.title("📤 Compartir Conocimiento")
+    st.write("Tu aporte ayuda a la comunidad académica.") [cite: 119]
+    
+    with st.form("upload_form"):
+        nuevo_titulo = st.text_input("Título del apunte")
+        nueva_materia = st.selectbox("Materia", ["Cálculo I", "Redes I", "Programación", "Metodología", "Física"])
+        archivo = st.file_uploader("Selecciona el archivo (PDF, DOCX)", type=['pdf', 'docx', 'png', 'jpg'])
+        
+        enviar = st.form_submit_button("Publicar Apunte")
+        
+        if enviar:
+            if nuevo_titulo and archivo:
+                nuevo_item = {
+                    "titulo": nuevo_titulo,
+                    "materia": nueva_materia,
+                    "semestre": filtro_semestre,
+                    "autor": "Usuario Actual",
+                    "fecha": datetime.now().strftime("%Y-%m-%d")
+                }
+                st.session_state.repositorio.append(nuevo_item)
+                st.success("✅ ¡Apunte subido con éxito al repositorio!")
             else:
-                st.success("Archivo listo para descarga.")
-
-# Pie de página técnico para Metodologías
-st.sidebar.divider()
-st.sidebar.caption(f"Versión: Prototipo Sprint 1 | Fecha: {datetime.now().strftime('%d/%m/%Y')}")
-
-# Sprint 2: Estructura de Materias Real
-materias_por_semestre = {
-    1: ["Metodología de la Investigación", "Cálculo I", "Cátedra Universitaria"],
-    2: ["Programación I", "Física I", "Cálculo II"],
-    3: ["Estructuras de Datos", "Sistemas Operativos", "Estadística"],
-    4: ["Bases de Datos", "Redes I", "Análisis Numérico"]
-}
-
-# Nueva sección de búsqueda (Requerimiento 2.1)
-st.sidebar.divider()
-busqueda = st.sidebar.text_input("🔍 Buscar material...")
-
-if busqueda:
-    st.write(f"Resultados para: **{busqueda}**")
-    # Aquí luego conectaremos con la base de datos
+                st.error("Por favor rellena todos los campos.")
