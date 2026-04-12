@@ -31,14 +31,19 @@ def actualizar_likes(id_registro, likes_actuales):
 
 def insertar_material(titulo, materia, semestre):
     nuevo = {
-        "titulo": titulo, 
-        "materia": materia, 
-        "semestre": semestre, 
+        "titulo": str(titulo), 
+        "materia": str(materia), 
+        "semestre": int(semestre), 
         "autor": "Estudiante", 
         "likes": 0
     }
-    supabase.table("repositorio").insert(nuevo).execute()
-
+    # El .execute() fallará si las columnas no coinciden exactamente
+    try:
+        supabase.table("repositorio").insert(nuevo).execute()
+        return True
+    except Exception as e:
+        st.error(f"Error técnico de Supabase: {e}")
+        return False
 # 3. Lógica de Calendario
 dia_hoy = datetime.now().day
 bloqueo_activo = 15 <= dia_hoy <= 20
