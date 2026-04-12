@@ -1,82 +1,117 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+from supabase import create_client, Client
 
 # 1. Configuración de la Página
-st.set_page_config(page_title="EduShare | Proyecto de Grado", layout="wide")
+st.set_page_config(page_title="EduShare | Base de Datos Real", layout="wide")
 
-# 2. Inicialización Blindada de Datos
-if 'repositorio' not in st.session_state or not st.session_state.repositorio:
-    st.session_state.repositorio = [
-        {"titulo": "Guía de Metodología", "materia": "Investigación", "semestre": 1, "autor": "Sistema", "likes": 5},
-        {"titulo": "Apuntes de Cálculo", "materia": "Cálculo I", "semestre": 1, "autor": "Admin", "likes": 3}
-    ]
+# 2. CONEXIÓN A SUPABASE
+# IMPORTANTE: Reemplaza estos valores con los de tu proyecto en Supabase (Settings -> API)
+URL_SUPABASE = "TU_URL_AQUÍ"
+KEY_SUPABASE = "TU_LLAVE_ANON_AQUÍ"
+
+@st.cache_resource
+def init_connection():
+    return create_client(URL_SUPABASE, KEY_SUPABASE)
+
+try:
+    supabase = init_connection()
+except Exception as e:
+    st.error("Error de conexión a la base de datos. Verifica tus llaves.")
+
+# Funciones de base de datos
+def obtener_datos():
+    # Trae todos los registros de la tabla 'repositorio'
+    response = supabase.table("repositorio").select("*").execute()
+    return response.data
+
+def actualizar_likes(id_registro, likes_actuales):
+    supabase.table("repositorio").update({"likes": likes_actuales + 1}).eq("id", id_registro).execute()
+
+def insertar_material(titulo, materia, semestre):
+    nuevo = {
+        "titulo": titulo, 
+        "materia": materia, 
+        "semestre": semestre, 
+        "autor": "Estudiante", 
+        "likes": 0
+    }
+    supabase.table("repositorio").insert(nuevo).execute()
 
 # 3. Lógica de Calendario
 dia_hoy = datetime.now().day
 bloqueo_activo = 15 <= dia_hoy <= 20
 
 # --- INTERFAZ ---
-st.title("🎓 EduShare: Plataforma Académica")
+st.title("🎓 EduShare: Repositorio Permanente")
 
-# Sidebar
 with st.sidebar:
-    st.header("Menú")
-    opcion = st.radio("Ir a:", ["Explorar", "Subir", "Ranking"])
+    st.header("Menú Principal")
+    opcion = st.radio("Secciones", ["Explorar Material", "Subir Material", "Ranking y Estadísticas"])
     st.divider()
-    sem_busqueda = st.selectbox("Semestre", list(range(1, 11)))
-    
-    # BOTÓN DE EMERGENCIA: Por si algo se pone en blanco
-    if st.button("🔄 Forzar Recarga de Datos"):
-        st.session_state.repositorio = [
-            {"titulo": "Guía de Metodología", "materia": "Investigación", "semestre": 1, "autor": "Sistema", "likes": 5},
-            {"titulo": "Apuntes de Cálculo", "materia": "Cálculo I", "semestre": 1, "autor": "Admin", "likes": 3}
-        ]
-        st.rerun()
+    sem_busqueda = st.selectbox("Filtrar por Semestre", list(range(1, 11)))
 
 # --- VISTA: EXPLORAR ---
-if opcion == "Explorar":
+if opcion == "Explorar Material":
     st.subheader(f"📂 Archivos del Semestre {sem_busqueda}")
     
     if bloqueo_activo:
-        st.warning("⚠️ Acceso restringido por semana de exámenes.")
+        st.warning("⚠️ Modo Exámenes: Descargas deshabilitadas por política de integridad.")
 
-    # Filtramos los datos
-    for i, item in enumerate(st.session_state.repositorio):
-        if item['semestre'] == sem_busqueda:
-            with st.expander(f"📄 {item['titulo']} ({item['materia']})", expanded=True):
-                c1, c2 = st.columns([3, 1])
-                with c1:
-                    st.write(f"Autor: {item['autor']} | 👍 {item['likes']} Likes")
-                with c2:
-                    if st.button("Dar Like", key=f"lk_{i}"):
-                        st.session_state.repositorio[i]['likes'] += 1
-                        st.rerun()
-                    
-                    if not bloqueo_activo:
-                        st.download_button("⬇️ Descargar", data="Contenido", file_name="archivo.pdf", key=f"dl_{i}")
+    # Obtenemos datos de la nube
+    datos_nube = obtener_datos()
+    
+    if datos_nube:
+        hay_material = False
+        for item in datos_nube:
+            if item['semestre'] == sem_busqueda:
+                hay_material = True
+                with st.container(border=True):
+                    c1, c2, c3 = st.columns([3, 1, 1])
+                    with c1:
+                        st.markdown(f"### {item['titulo']}")
+                        st.caption(f"Materia: {item['materia']} | Autor: {item['autor']}")
+                    with c2:
+                        st.write(f"⭐ {item['likes']} Reconocimientos")
+                        if st.button("Valorar", key=f"lk_{item['id']}"):
+                            actualizar_likes(item['id'], item['likes'])
+                            st.rerun()
+                    with c3:
+                        if not bloqueo_activo:
+                            st.download_button("📥 Descargar", data="PDF", file_name=f"{item['titulo']}.pdf", key=f"dl_{item['id']}")
+                        else:
+                            st.button("🔒 Bloqueado", disabled=True, key=f"lock_{item['id']}")
+        
+        if not hay_material:
+            st.info("No hay material registrado para este semestre.")
+    else:
+        st.info("La base de datos está vacía.")
 
 # --- VISTA: SUBIR ---
-elif opcion == "Subir":
-    st.subheader("📤 Subir Material")
-    with st.form("subida"):
-        t = st.text_input("Título")
-        m = st.text_input("Materia")
+elif opcion == "Subir Material":
+    st.subheader("📤 Cargar Nuevo Material a la Nube")
+    with st.form("form_registro", clear_on_submit=True):
+        t = st.text_input("Título del Documento")
+        m = st.text_input("Asignatura")
         s = st.number_input("Semestre", 1, 10, sem_busqueda)
-        f = st.file_uploader("Archivo")
-        if st.form_submit_button("Publicar"):
+        f = st.file_uploader("Adjuntar Archivo (PDF/Imagen)")
+        
+        if st.form_submit_button("Subir Permanentemente"):
             if t and m and f:
-                st.session_state.repositorio.append({"titulo": t, "materia": m, "semestre": s, "autor": "Estudiante", "likes": 0})
-                st.success("¡Subido! Ve a la pestaña Explorar.")
+                insertar_material(t, m, s)
+                st.success("✅ ¡El material ha sido guardado en la base de datos!")
             else:
-                st.error("Faltan datos.")
+                st.error("Por favor completa todos los campos.")
 
 # --- VISTA: RANKING ---
 else:
-    st.subheader("📊 Ranking de Materias")
-    df = pd.DataFrame(st.session_state.repositorio)
-    if not df.empty:
-        # Gráfica simple
+    st.subheader("📊 Análisis de Colaboración")
+    datos = obtener_datos()
+    if datos:
+        df = pd.DataFrame(datos)
+        # Gráfica de barras por materia
         stats = df.groupby('materia')['likes'].sum().reset_index()
         st.bar_chart(data=stats, x='materia', y='likes')
-        st.table(df)
+        # Tabla completa
+        st.dataframe(df[['titulo', 'materia', 'likes', 'autor']], use_container_width=True)
