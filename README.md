@@ -15,8 +15,8 @@ Este proyecto es un prototipo funcional desarrollado para la materia de **Metodo
 * **Base de Datos:** PostgreSQL (Supabase)
 
 ## 👤 Autor
-* **Nombre:** [Tu Nombre Completo]
-* **Institución:** [Nombre de tu Universidad/Colegio]
+* **Nombre:** Klinsman Jhosep Ospina ROjas
+* **Institución:** Unidades Tecnologicas de Santander
 
 ---
 *Prototipo desarrollado bajo metodología ágil de 7 Sprints.*
