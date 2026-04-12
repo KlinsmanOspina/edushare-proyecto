@@ -59,3 +59,19 @@ for i, materia in enumerate(materias_por_semestre[semestre]):
 # Pie de página técnico para Metodologías
 st.sidebar.divider()
 st.sidebar.caption(f"Versión: Prototipo Sprint 1 | Fecha: {datetime.now().strftime('%d/%m/%Y')}")
+
+# Sprint 2: Estructura de Materias Real
+materias_por_semestre = {
+    1: ["Metodología de la Investigación", "Cálculo I", "Cátedra Universitaria"],
+    2: ["Programación I", "Física I", "Cálculo II"],
+    3: ["Estructuras de Datos", "Sistemas Operativos", "Estadística"],
+    4: ["Bases de Datos", "Redes I", "Análisis Numérico"]
+}
+
+# Nueva sección de búsqueda (Requerimiento 2.1)
+st.sidebar.divider()
+busqueda = st.sidebar.text_input("🔍 Buscar material...")
+
+if busqueda:
+    st.write(f"Resultados para: **{busqueda}**")
+    # Aquí luego conectaremos con la base de datos
