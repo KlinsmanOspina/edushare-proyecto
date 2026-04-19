@@ -1,5 +1,5 @@
 # edushare-proyecto
-# 🎓 EduShare: Plataforma Colaborativa Académica
+# 🎓 BrainNotes: Plataforma Colaborativa Académica
 
 Este proyecto es un prototipo funcional desarrollado para la materia de **Metodología de la Investigación**. Su objetivo es centralizar material de estudio por semestres y fomentar la colaboración mediante un sistema de validación social.
 
