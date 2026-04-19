@@ -4,7 +4,7 @@ from datetime import datetime
 from supabase import create_client, Client
 
 # 1. CONFIGURACIÓN
-st.set_page_config(page_title="EduShare | Proyecto de Grado", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="BrainNotes | Proyecto de Grado", page_icon="🧠", layout="wide")
 
 # 2. CONEXIÓN A SUPABASE (Rellena con tus datos)
 URL_SUPABASE = "https://cofdpzmpkwiybeffqntk.supabase.co"
@@ -39,7 +39,7 @@ def insertar_material(titulo, materia, semestre, autor):
 
 # --- INTERFAZ ---
 with st.sidebar:
-    st.title("🎓 EduShare")
+    st.title("🧠 BrainNotes")
     menu = st.radio("Secciones", ["Explorar Material", "Subir Material", "Estadísticas"])
     st.divider()
     sem_filtro = st.selectbox("Filtrar Semestre", list(range(1, 11)))
